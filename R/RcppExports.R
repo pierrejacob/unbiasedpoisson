@@ -9,6 +9,10 @@ estimator_bin_ <- function(c_chains, component, lower, upper, k, m, lag) {
     .Call('_unbiasedpoisson_estimator_bin_', PACKAGE = 'unbiasedpoisson', c_chains, component, lower, upper, k, m, lag)
 }
 
+lag2 <- function(s, n, b, method) {
+    .Call('_unbiasedpoisson_lag2', PACKAGE = 'unbiasedpoisson', s, n, b, method)
+}
+
 fcprd <- function(X) {
     .Call('_unbiasedpoisson_fcprd', PACKAGE = 'unbiasedpoisson', X)
 }
@@ -47,6 +51,10 @@ rmvnorm_max_coupling_cholesky <- function(mu1, mu2, Cholesky1, Cholesky2, Choles
 
 rmvnorm_reflection_max_coupling_ <- function(mu1, mu2, Sigma_chol, inv_Sigma_chol) {
     .Call('_unbiasedpoisson_rmvnorm_reflection_max_coupling_', PACKAGE = 'unbiasedpoisson', mu1, mu2, Sigma_chol, inv_Sigma_chol)
+}
+
+rmvnorm_reflection_max_coupling_diag_ <- function(mu1, mu2, Sigma_chol) {
+    .Call('_unbiasedpoisson_rmvnorm_reflection_max_coupling_diag_', PACKAGE = 'unbiasedpoisson', mu1, mu2, Sigma_chol)
 }
 
 prune_measure_ <- function(df) {

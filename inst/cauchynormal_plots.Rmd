@@ -34,7 +34,7 @@ source("cauchynormal_functions.R")
 targetpdf <- function(z) sapply(z, function(t) exp(unnormalizedlogpdf(t)))
 normalizingconstant <- integrate(f = targetpdf,lower = -30, upper = 40)$val
 xseq <- seq(from = -30, to = 40, length.out = 1000)
-gpi <- qplot(xseq, sapply(xseq, function(z) targetpdf(z)/normalizingconstant), geom = 'line') + xlab('x') + ylab(TeX('$\\pi(x)$'))
+gpi <- qplot(xseq, sapply(xseq, function(z) targetpdf(z)/normalizingconstant), geom = 'line') + xlab(TeX("$\\theta$")) + ylab(TeX('$\\pi(\\theta)$'))
 gpi
 ggsave(filename = "../output/cauchynormal.target.pdf", plot = gpi, width = 8, height = 5)
 ```
@@ -65,6 +65,12 @@ of time.
 
 ```{r meetings, warning=FALSE}
 load(file = "../output/cauchynormal.gibbs.meetings.RData")
+ghistmeetings <- qplot(x = meetingtimes_gibbs-lag, geom = "blank") + geom_histogram(aes(y = ..density..))
+ghistmeetings <- ghistmeetings + xlab(TeX("$\\tau"))
+ghistmeetings
+ggsave(filename = "../output/cauchynormal.meetinggibbs.pdf", 
+       plot = ghistmeetings, width = 8, height = 5)
+
 load(file = "../output/cauchynormal.mrth.meetings.RData")
 ## two TV upper bounds
 niterations <- 150

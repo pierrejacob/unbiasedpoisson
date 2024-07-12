@@ -3,19 +3,19 @@
 using namespace Rcpp;
 using namespace std;
 
-inline int randWrapper(const int n) {
-  RNGScope scope;
-  NumericVector ru = runif(1);
-  return floor(ru(0)*n);
-}
 
 // [[Rcpp::export]]
 IntegerVector multinomial_resampling_n_(const NumericVector & weights, int ndraws){
   RNGScope scope;
   int nparticles = weights.size();
+  // create vector of ancestor variables
   IntegerVector ancestors(ndraws);
+  // cumulative weights
   NumericVector cumsumw = cumsum(weights);
   NumericVector uniforms = runif(ndraws);
+  // the following avoids sorting the uniforms
+  // it is based on the directed generation of a vector of sorted uniforms 
+  // using scaled Exponential variables
   double sumw = cumsumw(nparticles - 1);
   double lnMax = 0;
   int j = nparticles;
@@ -23,13 +23,10 @@ IntegerVector multinomial_resampling_n_(const NumericVector & weights, int ndraw
     lnMax += log(uniforms(i-1)) / i;
     uniforms(i-1) = sumw * exp(lnMax);
     while (j > 0 && uniforms(i-1) < cumsumw(j-1)){
-      // cerr << i << ", " << j << endl;
       j --;
     }
-    // cerr << "nearly done" << endl;
     ancestors(i-1) = j;
-    // cerr << "done" << endl;
   }
-  std::random_shuffle(ancestors.begin(), ancestors.end(), randWrapper);
-  return ancestors;
+  // random shuffling of the ancestors
+  return sample(ancestors, ndraws);
 }

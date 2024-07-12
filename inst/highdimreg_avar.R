@@ -36,7 +36,7 @@ results.df <- foreach(irep = 1:nrep, .combine=rbind) %do% {
   run <- results[[irep]]
   data.frame(natoms = natoms_seq,
              rep = irep,
-             estimator = run$estimator,
+             estimator = t(run$estimator),
              cost = run$cost,
              pih = mean(run$pih),
              varh = run$varh,

@@ -31,5 +31,9 @@ Rcpp::List rmvnorm_max_coupling_cholesky(const NumericVector & mu1, const Numeri
 Rcpp::List rmvnorm_reflection_max_coupling_(const Eigen::VectorXd & mu1, const Eigen::VectorXd & mu2,
                                 const Eigen::MatrixXd & Sigma_chol, const Eigen::MatrixXd & inv_Sigma_chol);
 
+
+// sample from reflection-maximum coupling of two multivariate Normals with common *diagonal* covariance matrix
+Rcpp::List rmvnorm_reflection_max_coupling_diag_(const Eigen::ArrayXd & mu1, const Eigen::ArrayXd & mu2,
+                                            const Eigen::ArrayXd & Sigma_chol);
 #endif
 

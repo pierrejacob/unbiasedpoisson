@@ -79,7 +79,8 @@ sample_coupled_chains <- function(single_kernel, coupled_kernel, rinit, m = 1, l
     cat("state1 at position:", state1$position, "\n")
     cat("state2 at position:", state2$position, "\n")
     tictoc::tic.clear()
-    return(NULL)
+    return(list(samples1 = samples1[1:(time+1),], samples2 = samples2[1:(time-lag+1),],
+                meetingtime = meetingtime, iteration = time, elapsedtime = NA, cost = NA))
   }
   samples1 <- samples1[1:(time+1),,drop=F]
   samples2 <- samples2[1:(time-lag+1),,drop=F]

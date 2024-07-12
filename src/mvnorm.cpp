@@ -235,3 +235,61 @@ Rcpp::List rmvnorm_reflection_max_coupling_(const Eigen::VectorXd & mu1, const E
   return Rcpp::List::create(Named("xy") = xy, Named("identical") = identical_);
 }
 
+// Case where the covariance matricx is diagonal
+// 
+
+// [[Rcpp::export]]
+Rcpp::List rmvnorm_reflection_max_coupling_diag_(const Eigen::ArrayXd & mu1, const Eigen::ArrayXd & mu2,
+                                            const Eigen::ArrayXd & Sigma_chol){
+  int d = mu1.size();
+  NumericMatrix xy(d,2);
+  bool identical_ = false;
+  Eigen::ArrayXd scaled_diff = (mu2-mu1) / Sigma_chol;
+  // generate xi and eta, two standard Normal draws
+  GetRNGstate();
+  // convert NumericVector into Eigen::ArrayXd
+  Eigen::ArrayXd xi = as<Eigen::ArrayXd>(rnorm(d, 0., 1.));
+  PutRNGstate();
+  Eigen::ArrayXd eta;
+  // define z and e
+  Eigen::ArrayXd z = - scaled_diff;
+  double normz = z.matrix().norm();
+  if (normz < 1e-15){
+    // if normz is very small, most likely the user has supplied identical
+    // arguments to mu1 and mu2, which would cause trouble in the forthcoming division by normz
+    // thankfully if the user sticks to the function sample_meetingtime, sample_coupled_chains etc
+    // then this should never happen.
+    identical_ = true;
+    xi = mu1 + xi * Sigma_chol;
+    for(int i=0; i<d; i++){
+      xy(i,0) = xi(i);
+      xy(i,1) = xi(i);
+    }
+  } else {
+    Eigen::ArrayXd e = z / normz;
+    GetRNGstate();
+    NumericVector utilde = runif(1);
+    PutRNGstate();
+    double edotxi = (e * xi).sum();
+    if (log(utilde(0)) < (-0.5 * (edotxi + normz) * (edotxi + normz) + 0.5 * edotxi * edotxi)){
+      eta = xi + z;
+      identical_ = true;
+    } else {
+      eta = xi - 2. * edotxi * e;
+    }
+    // construct x ~ Normal(mu1, Sigma) and y ~ Normal(mu2, Sigma) from xi and eta
+    xi = mu1 + xi * Sigma_chol;
+    eta = mu2 + eta * Sigma_chol;
+    for (int i=0; i<d; i++){
+      xy(i,0) = xi(i);
+      if (identical_){
+        xy(i,1) = xi(i);
+      } else {
+        xy(i,1) = eta(i);
+      }
+    }
+  }
+  return Rcpp::List::create(Named("xy") = xy, Named("identical") = identical_);
+}
+
+

@@ -37,7 +37,7 @@ source("highdimreg_functions.R")
 We start by loading MCMC runs, and plotting some traces.
 
 ```{r longruntrace, warning=FALSE}
-load(file = "../output/highdimreg.longrun.RData")
+load(file = "~/Dropbox/UnbiasedPoissonNumerics/highdimreg.longrun.RData")
 gtrace <- ggplot(history.df %>% filter(iteration >= 10, iteration <= 1000, chain <= 3),
        aes(x = iteration, y = value, group = chain, colour = factor(chain))) + geom_line() + xlab("iteration") + ylab(TeX("$\\beta_{2564}$")) +
   scale_color_manual(values = c("black", "#005BBB", "#FFD500", "red")) + theme(legend.position = "none")
@@ -52,7 +52,7 @@ one at the origin, and one around $-1.5$.
 ```{r marginalhistogram, warning=FALSE, message=FALSE}
 burnin <- 2000
 ghist <- ggplot(history.df %>% filter(iteration >= burnin), aes(x = value)) + geom_histogram(aes(y=..density..), binwidth=0.05) + xlab(TeX("$\\beta_{2564}$"))
-ghist <- ghist + scale_y_log10() + xlim(-2.5, .5)
+ghist <- ghist + xlim(-2.5, .5)
 ghist
 ggsave(filename = '../output/highdimreg.hist.pdf', plot = ghist, width = 6, height = 5)
 ```
@@ -87,7 +87,7 @@ which are products of a mean and a variance.
 get_mean_with_booterror <- function(v, nb = 1000){
   bootresult <- boot::boot(data = v, statistic = function(v,indices) mean(v[indices]), R = nb)
   paste0("[", 
-         paste0(prettyNum(as.numeric(quantile(bootresult$t, probs = c(0.025, 0.975))), digits=0, scientific = F, nsmall = 0), collapse = " - "),
+         paste0(prettyNum(as.numeric(quantile(bootresult$t, probs = c(0.025, 0.975))), digits=1, scientific = F, nsmall = 0), collapse = " - "),
          "]")
 }
 # print variance
@@ -125,6 +125,7 @@ results.df <- foreach(irep = 1:nrep, .combine=rbind) %do% {
 
 table_highdimreg <- results.df %>% ungroup() %>% group_by(natoms) %>%
   summarise(pestimate = get_mean_with_booterror(estimator), pcost = get_mean_with_booterror(cost), pfishycost = get_mean_with_booterror(cost_fishyestimation), pvariance = get_var_with_booterror(estimator), pefficiency = get_eff_with_booterror(estimator,cost))
+
 table_highdimreg <- table_highdimreg %>% setNames(c("R", "estimate", "total cost", "fishy cost",
                                         "variance of estimator", "inefficiency"))
 print(table_highdimreg, width = Inf)
@@ -169,13 +170,74 @@ unbiasedmcmc.summary.df$meancost/2
 unbiasedmcmc.summary.df$var_estimate * unbiasedmcmc.summary.df$meancost
 ```
 
+```{r uMCMC_vs_stdMCMC}
+## compute inefficiency of UMCMC
+results_umcmc <- results.df %>% filter(natoms == 1) %>% mutate(cost_umcmc = cost - cost_fishyestimation) %>% select(pih, cost_umcmc)
+cat("inefficiency of UMCMC:", round(var(results_umcmc$pih) * mean(results_umcmc$cost_umcmc), 3), "\n")
+avar_bestguess <- results.df %>% filter(natoms == 10) %>% summarise(avar = mean(estimator)) %>% pull()
+cat("inefficiency of std MCMC:", round(avar_bestguess, 3), "\n")
+
+```
 We can see that the inefficiency is not much higher than the 
 asymptotic variance, estimated around `r table_highdimreg$estimate[3]`.
 This means that the choice of tuning parameters $k,\ell,L$,
 as well as the coupling strategy implemented here,
 cannot be much improved, in terms of inefficiency.
 
-Note that in unbiased MCMC, we discard the first $k$ iterations 
-of each run, so that a loss of efficiency of at least $k/\ell$ is expected
-relative to MCMC. Here $k/\ell$ is equal to `r k/m*100`%.
+### BM and SV
 
+
+```{r highdimreg_classicalvar}
+load(file = "../output/highdimreg.classicalavar.RData")
+
+gibbsclassicalvardf %>% group_by(nmcmc, method, r) %>% summarise(mean = mean(value), 
+                                                                sd = sd(value),
+                                                                v = var(value))
+
+load(file = "../output/highdimreg.uavar.RData")
+
+results.df <- foreach(irep = 1:nrep, .combine=rbind) %do% {
+  run <- results[[irep]]
+  data.frame(natoms = natoms_seq,
+             rep = irep,
+             estimator = run$estimator[1,],
+             cost = run$cost,
+             pih = mean(run$pih),
+             varh = run$varh,
+             cost_fishyestimation = run$cost_fishyterms)
+}
+
+results_uavar <- results.df %>% filter(natoms == 10) %>% pull(estimator)
+estim_lo <- mean(results_uavar) - 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
+estim_hi <- mean(results_uavar) + 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
+
+g <- ggplot(gibbsclassicalvardf %>% filter(nmcmc == 20000) %>% mutate(tss = paste(method, r)),
+            aes(x = tss, y = value)) + geom_point() +
+  stat_summary(
+    geom = "point",
+    fun.y = "mean",
+    col = "black",
+    size = 3,
+    shape = 24,
+    fill = "yellow"
+  )
+g <- g + xlab("method") + ylab("estimate") + ylim(25, 100)
+g <- g + geom_hline(yintercept =  mean(results_uavar), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
+g
+ggsave(filename = "../output/highdimreg.classicavar2e4.pdf", plot = g, width = 8, height = 5)
+
+g <- ggplot(gibbsclassicalvardf %>% filter(nmcmc == 200000) %>% mutate(tss = paste(method, r)),
+            aes(x = tss, y = value)) + geom_point() +
+  stat_summary(
+    geom = "point",
+    fun.y = "mean",
+    col = "black",
+    size = 3,
+    shape = 24,
+    fill = "yellow"
+  )
+g <- g + xlab("method") + ylab("estimate")  + ylim(25, 100)
+g <- g + geom_hline(yintercept =  mean(results_uavar), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
+g
+ggsave(filename = "../output/highdimreg.classicavar2e5.pdf", plot = g, width = 8, height = 5)
+```

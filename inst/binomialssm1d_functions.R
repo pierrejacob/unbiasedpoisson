@@ -230,7 +230,6 @@ single_kernel <- function(state){
   sd_proposal <- runif(1, min = 0.1, max = 20) * stepsizes
   # Sigma_chol <- diag(sd_proposal)
   # Sigma_chol_inv <- diag(1/sd_proposal)
-  
   proposal <- position + rnorm(1, mean = 0, sd = sd_proposal)
   ## evaluate prior log pdf
   target_proposal <- dprior(proposal)

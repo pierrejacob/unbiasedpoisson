@@ -1,0 +1,248 @@
+---
+title: "Logistic regression with random effects"
+output:
+  html_document:
+    df_print: paged
+---
+
+### Files to run
+
+(In this order)
+
+- `randomeffectslogistic_mala_meetings.R`
+- `randomeffectslogistic_mala_avar.R`
+- `randomeffectslogistic_mala_longrun.R`
+- `randomeffectslogistic_hmc_meetings.R`
+- `randomeffectslogistic_hmc_avar.R`
+- `randomeffectslogistic_hmc_longrun.R`
+- `randomeffectslogistic_hmc_epave.R`
+
+
+### Target 
+
+The target is the posterior distribution in a logistic regression model with random effects.
+
+```{r setup, warning=FALSE, message=FALSE}
+library(unbiasedpoisson)
+library(tidyverse)
+setmytheme()
+set.seed(1)
+```
+
+### Algorithms and convergence to stationarity
+
+We consider a Hamiltonian Monte Carlo algorithm.
+
+As a special case we consider MALA.
+
+We first diagnose the marginal convergence of each algorithm.
+
+```{r meetingsMALA, warning=FALSE}
+load(file = "../output/randomeffectslogistic.mala.meetings.RData")
+ghistmeetings <- qplot(x = mts-lag, geom = "blank") + geom_histogram(aes(y = ..density..))
+ghistmeetings <- ghistmeetings + xlab(TeX("$\\tau"))
+ghistmeetings
+## two TV upper bounds
+niterations <- max(mts-lag)
+df <- data.frame(sampler = "MALA", t = 11:niterations, tvub = sapply(11:niterations, function(t) tv_upper_bound(unlist(mts), lag, t)))
+# tail(df)
+
+load(file = "../output/randomeffectslogistic.hmc.meetings.RData")
+ghistmeetings <- qplot(x = mts-lag, geom = "blank") + geom_histogram(aes(y = ..density..))
+ghistmeetings <- ghistmeetings + xlab(TeX("$\\tau"))
+niterations <- max(mts-lag)
+df <- rbind(df, data.frame(sampler = "HMC", t = 11:niterations, tvub = sapply(11:niterations, function(t) tv_upper_bound(unlist(mts), lag, t))))
+
+gtv <- ggplot(df, aes(x = t, y = tvub, linetype = sampler)) + geom_line() + scale_x_log10() + scale_y_log10() +
+  ylab("TV distance") + xlab("iteration") + scale_linetype(name = "sampler:")
+gtv
+ggsave(filename = "../output/randomeffectslogistic.tvupperbounds.pdf", plot = gtv, width = 6, height = 5)
+```
+
+The upper bounds might suggest that one sampler converges faster than the other;
+however these are only upper bounds, so the actual TV distances might be ordered differently.
+
+```{r tracehmc}
+load(file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.hmc.longrun.RData")
+gtrace <- ggplot(history.df %>% filter(iteration >= 0, iteration <= 1000, chain <= 3),
+       aes(x = iteration, y = value, group = chain, colour = factor(chain))) + geom_line() + xlab("iteration") + ylab(TeX("$\\beta_{c}$")) +
+  scale_color_manual(values = c("black", "#005BBB", "#FFD500", "red")) + theme(legend.position = "none")
+gtrace
+ggsave(filename = '../output/randomeffects.hmc.trace.pdf', plot = gtrace, width = 6, height = 5)
+```
+
+
+```{r marginalhistogram, warning=FALSE, message=FALSE}
+ghist <- ggplot(history.df %>% filter(iteration >= 1000), aes(x = value)) + geom_histogram(aes(y=..density..), binwidth=0.05) + xlab(TeX("$\\beta_{c}$"))
+ghist
+ggsave(filename = '../output/randomeffects.hmc.hist.pdf', plot = ghist, width = 6, height = 5)
+```
+
+### SUAVE 
+
+Next we approximate the asymptotic variance $v(P,h)$ 
+associated with HMC algorithms.
+
+We first define some function to construct bootstrap-based $95\%$ confidence
+interval for means, variance and inefficiencies. This will be used to produce tables.
+
+```{r functionbootstrap}
+get_mean_with_booterror <- function(v, nb = 1000){
+  bootresult <- boot::boot(data = v, statistic = function(v,indices) mean(v[indices]), R = nb)
+  paste0("[", 
+         paste0(prettyNum(as.numeric(quantile(bootresult$t, probs = c(0.025, 0.975))), digits=3, scientific = F, nsmall = 0), collapse = " - "),
+         "]")
+}
+# print variance
+get_var_with_booterror <- function(v, nb = 1000){
+  bootresult <- boot::boot(data = v, statistic = function(v,indices) var(v[indices]), R = nb)
+  paste0("[", 
+         paste0(prettyNum(as.numeric(quantile(bootresult$t, probs = c(0.025, 0.975))), digits=3, scientific = T), collapse = " - "),
+         "]")
+}
+# print efficiency
+get_eff_with_booterror <- function(v, c, nb = 1000){
+  bootresult <- boot::boot(data = cbind(v,c), statistic = function(x,indices) var(x[indices,1])*mean(x[indices,2]), R = nb)
+  paste0("[", 
+         paste0(prettyNum(as.numeric(quantile(bootresult$t, probs = c(0.025, 0.975))), digits=3, scientific = T), collapse = " - "),
+         "]")
+}
+```
+
+
+For HMC we obtain the following results.
+
+```{r hmc_avar}
+load(file = "../output/randomeffects.hmc.avar.RData")
+results.hmc <- results_
+table_hmc <- results.hmc %>% ungroup() %>% group_by(natoms) %>%
+  summarise(pestimate = get_mean_with_booterror(estimator), pcost = get_mean_with_booterror(cost), pfishycost = get_mean_with_booterror(cost_fishyestimation), pvariance = get_var_with_booterror(estimator), pefficiency = get_eff_with_booterror(estimator,cost))
+table_hmc <- table_hmc %>% setNames(c("R", "estimate", "total cost", "fishy cost", 
+                                        "variance of estimator", "inefficiency"))
+print(table_hmc, width = Inf)
+knitr::kable(table_hmc, digits = 0, row.names = NA, format = 'latex', escape = FALSE) %>%
+  cat(., file = '../output/randomeffects.hmc.summary.tex')
+```
+
+
+
+That table is obtained using `r nrep` independent replicates. From the estimates we obtain confidence intervals for each quantity in the table using the nonparametric bootstrap (i.e. sample with replacement and then compute aggregate quantity). The columns are:
+
+- estimate: overall estimate of $v(P,h)$, obtained by averaging `r nrep` independent estimates
+- cost: total cost of each proposed estimate, in units of "Markov transitions" 
+- fishy cost: subcost associated with the fishy estimates (increases with $R$)
+- variance of estimator: empirical variance of the estimates (decreases with $R$)
+- inefficiency: product of the variance and the total cost (smaller is better)
+
+We see that the variance decreases with $R$ but the cost increases. The inefficiency seems to "stabilize" as $R$ gets bigger. An important take-away is that $R=1$ is not a good choice. 
+
+As a rule of thumb we propose to choose $R$ such that "fishy cost" is around $50\%$ of the total cost: this way we waste at most half of our computing time.
+
+```{r uMCMC_vs_stdMCMC}
+## compute inefficiency of UMCMC
+results_umcmc <- results_ %>% filter(natoms == 1) %>% mutate(cost_umcmc = cost - cost_fishyestimation) %>% select(pih, cost_umcmc)
+cat("inefficiency of UMCMC:", round(var(results_umcmc$pih) * mean(results_umcmc$cost_umcmc), 3), "\n")
+avar_bestguess <- results_ %>% filter(natoms == 20) %>% summarise(avar = mean(estimator)) %>% pull()
+cat("inefficiency of std MCMC:", round(avar_bestguess, 3), "\n")
+
+```
+
+
+Here we conclude that $v(P,h)$ for the HMC sampler is around 2.
+
+```{r groundtruth_hmc}
+ground_truth <- results.hmc %>% filter(natoms == 20) %>% summarise(avar = mean(estimator)) %>% pull()
+print(ground_truth)
+```
+
+If we focus on "natoms = 20", we see that the cost is 31,000 per estimator,
+and the variance (which equals the MSE) is around 4.5.
+
+
+```{r mala_avar}
+load(file = "../output/randomeffects.mala.avar.RData")
+results.mala <- results_
+table_mala <- results.mala %>% ungroup() %>% group_by(natoms) %>%
+  summarise(pestimate = get_mean_with_booterror(estimator), pcost = get_mean_with_booterror(cost), pfishycost = get_mean_with_booterror(cost_fishyestimation), pvariance = get_var_with_booterror(estimator), pefficiency = get_eff_with_booterror(estimator,cost))
+table_mala <- table_mala %>% setNames(c("R", "estimate", "total cost", "fishy cost", 
+                                        "variance of estimator", "inefficiency"))
+print(table_mala, width = Inf)
+knitr::kable(table_mala, digits = 0, row.names = NA, format = 'latex', escape = FALSE) %>%
+  cat(., file = '../output/randomeffects.mala.summary.tex')
+```
+
+### EPAVE
+
+```{r epave}
+load(file = "../output/randomeffects.hmc.epave.RData")
+results_epave %>% summarise(avar = mean(estimator), 
+                            varavar = var(estimator), varh = mean(varh), meancost = mean(cost))
+
+results_epave %>%
+  summarise(pestimate = get_mean_with_booterror(estimator), pcost = get_mean_with_booterror(cost), pfishycost = get_mean_with_booterror(cost_fishyestimation), pvariance = get_var_with_booterror(estimator), pefficiency = get_eff_with_booterror(estimator,cost))
+```
+
+Here we see that the efficiency of EPAVE and SUAVE are similar.
+
+The EPAVE estimator has little bias with this choice of burn-in,
+a variance of 2 for a cost of 104,000.
+
+### Standard estimators of avar
+
+```{r hmc_classicalvar}
+load(file = "../output/randomeffects.hmc.classicalavar.RData")
+  
+hmcclassicalvardf %>% group_by(nmcmc, method, r) %>% summarise(mean = mean(value), 
+                                                        sd = sd(value),
+                                                        v = var(value))
+
+
+load(file = "../output/randomeffects.hmc.avar.RData")
+results.hmc <- results_ %>% filter(natoms == 20) %>% pull(estimator)
+estim_lo <- mean(results.hmc) - 1.96 * sd(results.hmc) / sqrt(length(results.hmc))
+estim_hi <- mean(results.hmc) + 1.96 * sd(results.hmc) / sqrt(length(results.hmc))
+
+g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 10000) %>% mutate(tss = paste(method, r)),
+       aes(x = tss, y = value)) + geom_point() +
+  stat_summary(
+    geom = "point",
+    fun.y = "mean",
+    col = "black",
+    size = 3,
+    shape = 24,
+    fill = "yellow"
+  )
+g <- g + xlab("method") + ylab("estimate") + ylim(1,2)
+g <- g + geom_hline(yintercept =  mean(results.hmc), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
+g
+ggsave(filename = "../output/randomeffects.hmc.classicavar1e4.pdf", plot = g, width = 8, height = 5)
+
+g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 100000) %>% mutate(tss = paste(method, r)),
+            aes(x = tss, y = value)) + geom_point() +
+  stat_summary(
+    geom = "point",
+    fun.y = "mean",
+    col = "black",
+    size = 3,
+    shape = 24,
+    fill = "yellow"
+  )
+g <- g + xlab("method") + ylab("estimate")  + ylim(1,2)
+g <- g + geom_hline(yintercept =  mean(results.hmc), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
+g
+ggsave(filename = "../output/randomeffects.hmc.classicavar1e5.pdf", plot = g, width = 8, height = 5)
+
+```
+
+With classical variance estimators, here the variance is much lower.
+We see that it varies but it is of the order of 10^{-3}, with a cost
+of 400,000. If the estimators were unbiased we would 
+obtain an inefficiency of 400, whereas EPAVE and SUAVE were around 150,000, i.e. 300 times more.
+
+What about the bias?
+
+```{r classicalavarbias}
+hmcclassicalvardf %>% group_by(method, r) %>% summarise(mean_ = mean(value)) %>% mutate(bias = mean_ - ground_truth, relbias = (mean_ - ground_truth)/ground_truth)
+```
+
+

@@ -68,7 +68,7 @@ We first run a few independent chains, using $P=256$ particles
 in each run of the particle filter. The trace plot looks as follows.
 
 ```{r traceplot, warning=FALSE, message=FALSE}
-load(file = "../output/binomialssm1d.longrun.RData")
+load(file = "~/Dropbox/UnbiasedPoissonNumerics/binomialssm1d.longrun.RData")
 ggplot(history %>% filter(iteration < 3e2), aes(x = iteration, y = x1, group = chain)) + geom_line() + ylab(TeX("$\\alpha$"))
 ```
 
@@ -209,6 +209,7 @@ alldf_ <- foreach (irep = 1:nrep, .combine = rbind) %do% {
 }
 ghtilde <- ggplot(alldf_, aes(x = atom, y = fishyestimate)) + xlab(TeX("$\\alpha$")) +
   geom_smooth(formula = y ~ s(x, bs = "cs"), method = 'gam') + ylab(TeX("fishy function(x)$")) 
+ghtilde <- ghtilde + xlim(0.9, 1)
 ghtilde
 ggsave(filename = "../output/binomialssm1d.htilde.badanchor.pdf", plot = ghtilde, width = 8, height = 5)
 ```
@@ -269,6 +270,7 @@ alldf_ <- foreach (irep = 1:nrep, .combine = rbind) %do% {
 }
 ghtilde <- ggplot(alldf_, aes(x = atom, y = fishyestimate)) + xlab(TeX("$\\alpha$")) +
   geom_smooth(formula = y ~ s(x, bs = "cs"), method = 'gam') + ylab(TeX("fishy function(x)$")) 
+ghtilde <- ghtilde + xlim(0.9, 1)
 ghtilde
 ggsave(filename = "../output/binomialssm1d.htilde.goodanchor.pdf", plot = ghtilde, width = 8, height = 5)
 ```
@@ -337,7 +339,7 @@ table_goodanchor <- res_df_goodanchor %>% filter(natoms == 50) %>%
   summarise(y = "0.975", pestimate = get_mean_with_booterror(estimator), pcost = get_mean_with_booterror(cost), pfishycost = get_mean_with_booterror(cost_fishyestimation), pvariance = get_var_with_booterror(estimator), pefficiency = get_eff_with_booterror(estimator,cost))
 
 table_comparey <- rbind(table_badanchor, table_goodanchor) %>% setNames(c("y", "estimate", "total cost", "fishy cost",
-                                        "variance of estimator", "inefficiency")) %>% select(-`total cost`)
+                                        "variance of estimator", "inefficiency"))  %>% select(-`inefficiency`)
 print(table_comparey)
 knitr::kable(table_comparey, digits = 0, row.names = NA, format = 'latex', escape = FALSE) %>%
   cat(., file = '../output/binomialssm1d.comparey.tex')
@@ -370,4 +372,76 @@ around `r round(summary_goodanchorR50$meanestimator, digits = 4)`.
 So unbiased MCMC, as tuned here, is pretty close to the standard MCMC
 estimator in terms of efficiency.
 
+### BM and SV
+```{r binomialssm_bmsv}
+load(file = "../output/binomialssm.classicalavar.RData")
+pmmhclassicalvardf %>% group_by(nmcmc, method, r) %>% summarise(mean = mean(value), sd = sd(value), v = var(value))
+```
+
+
+Quick calculation:
+```{r}
+# var of SV r = 2, t = 20k: 1.365159e-08
+# cost: 4 * 20k = 80000
+
+
+
+# SUAVE with R = 50: cost 6k, variance 5e-7
+
+# number of SUAVE to get a variance of 1.365159e-08:
+6e-7/1.365159e-08
+```
+
+```{r binomialssm_bmsv_plots}
+load("../output/binomialssm1d.uavar.P256.goodanchor.RData")
+
+res_df_goodanchor <- foreach (irep = 1:nrep, .combine = rbind) %do% {
+  res_ <- results.goodx0[[irep]]
+  run <- unbiasedvar_from_tworuns(res_[[1]], res_[[2]], 
+                                  natoms = natoms_seq)
+  data.frame(natoms = natoms_seq,
+             rep = irep,
+             estimator = run$estimator[1,],
+             cost = run$cost,
+             pih = mean(run$pih),
+             varh = run$varh,
+             cost_fishyestimation = run$cost_fishyterms)
+}
+
+res_df_goodanchor %>% tail
+results.df <- res_df_goodanchor
+results_uavar <- results.df %>% filter(natoms == 50) %>% pull(estimator)
+estim_lo <- mean(results_uavar) - 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
+estim_hi <- mean(results_uavar) + 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
+
+g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 10000) %>% mutate(tss = paste(method, r)),
+            aes(x = tss, y = value)) + geom_point() +
+  stat_summary(
+    geom = "point",
+    fun = "mean",
+    col = "black",
+    size = 3,
+    shape = 24,
+    fill = "yellow"
+  )
+g <- g + xlab("method") + ylab("estimate") + ylim(0.002, 0.004)
+g <- g + geom_hline(yintercept =  mean(results_uavar), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
+g
+ggsave(filename = "../output/binomialssm.classicavar1e4.pdf", plot = g, width = 8, height = 5)
+
+g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 20000) %>% mutate(tss = paste(method, r)),
+            aes(x = tss, y = value)) + geom_point() +
+  stat_summary(
+    geom = "point",
+    fun.y = "mean",
+    col = "black",
+    size = 3,
+    shape = 24,
+    fill = "yellow"
+  )
+g <- g + xlab("method") + ylab("estimate")  + ylim(0.002, 0.004)
+g <- g + geom_hline(yintercept =  mean(results_uavar), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
+g
+ggsave(filename = "../output/binomialssm.classicavar2e4.pdf", plot = g, width = 8, height = 5)
+```
 

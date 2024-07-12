@@ -11,8 +11,8 @@ set.seed(1)
 
 source("inst/highdimreg_functions.R")
 
-nmcmc <- 5e4
-nchains <- 10
+nmcmc <- 2e5
+nchains <- 100
 
 history <- foreach(ichain = 1:nchains, .combine = cbind) %dorng% {
   history_onechain <- rep(0, nmcmc)
@@ -28,8 +28,8 @@ history.df <- reshape2::melt(history)
 names(history.df) <- c("iteration", "chain", "value")
 history.df$chain <- rep(1:nchains, each = nmcmc)
 
-save(nmcmc, nchains, history.df, file = "output/highdimreg.longrun.RData")
-load(file = "output/highdimreg.longrun.RData")
+save(nmcmc, nchains, history.df, file = "~/Dropbox/UnbiasedPoissonNumerics/highdimreg.longrun.RData")
+load(file = "~/Dropbox/UnbiasedPoissonNumerics/highdimreg.longrun.RData")
 
 library(mcmcse) 
 ##### Parallel batch means
@@ -65,7 +65,7 @@ parBM <- function(chains, r = 1){
 head(history.df)
 dim(history.df)
 history.df[nmcmc+1,]
-burnin <- 500
+burnin <- 1000
 chainlist <- lapply(1:nchains, function(ichain) history.df[(nmcmc*(ichain-1)+burnin):(nmcmc*(ichain-1)+nmcmc),3])
 
 parBM(chainlist, r = 1)
@@ -73,10 +73,32 @@ parBM(chainlist, r = 2)
 parBM(chainlist, r = 3)
 
 ## BM for each chain
+bms_ <- matrix(NA, nrow = nchains, ncol = 3)
 for (ichain in 1:nchains){
-  chainlist <- list(history.df[(nmcmc*(ichain-1)+burnin):(nmcmc*(ichain-1)+nmcmc),3])
-  print(parBM(chainlist, r = 2))
+  chainlist_ <- list(history.df[(nmcmc*(ichain-1)+burnin):(nmcmc*(ichain-1)+nmcmc),3])
+  for (r in 1:3){
+    bms_[ichain,r] <- parBM(chainlist_, r = r)
+  }
 }
+hist(bms_[,1], prob = T, xlim = c(0, 100))
+hist(bms_[,2], prob = T, col = "red", add = T)
+hist(bms_[,3], prob = T, col = "blue", add = T)
+
+
+# load(file = "output/highdimreg.uavar.RData")
+# 
+# results.df <- foreach(irep = 1:nrep, .combine=rbind) %do% {
+#   run <- results[[irep]]
+#   data.frame(natoms = natoms_seq,
+#              rep = irep,
+#              estimator = run$estimator[1,],
+#              cost = run$cost,
+#              pih = mean(run$pih),
+#              varh = run$varh,
+#              cost_fishyestimation = run$cost_fishyterms)
+# }
+# # 
+# # hist(results.df %>% filter(natoms == 5) %>% pull(estimator), col = 'yellow', prob = T)
 
 ## variance of the target
 

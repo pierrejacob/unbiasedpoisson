@@ -75,7 +75,7 @@ rmvnorm_max_chol <- function(mu1, mu2, Cholesky1, Cholesky2, Cholesky_inverse1, 
 #'For univariate Normal distribution, see \code{\link{rnorm_reflectionmax}}.
 #'
 #'@param mu1 First mean
-#'@param mu2 First mean
+#'@param mu2 Second mean
 #'@param Cholesky Cholesky factor, e.g. obtained with \code{\link[base]{chol}}
 #'@param Cholesky_inverse Inverse of Cholesky factor, e.g. obtained with \code{solve(chol(Sigma))}
 #'@return A list containing 'xy', a matrix with 2 columns (one for each draw),
@@ -97,6 +97,39 @@ rmvnorm_reflectionmax <- function(mu1, mu2, Cholesky, Cholesky_inverse){
     stop("function 'rmvnorm_reflectionmax' is meant for multivariate Normals; for univariate Normals, use 'rnorm_reflectionmax'")
   }
   return(rmvnorm_reflection_max_coupling_(mu1, mu2, Cholesky, Cholesky_inverse))
+}
+
+
+
+#'@rdname rmvnorm_reflectionmax_diag
+#'@title Reflection-Maximal coupling of two multivariate Normal distributions
+#'@description Sample from reflection-maximal coupling of two multivariate Normal distributions,
+#'specified through their means, with the same covariance matrix, specified
+#'through its Cholesky factor. Here the assumption is that the covariance is diagonal,
+#'and thus the Cholesky factor is a vector of the same length as the means
+#'
+#'The idea is that a multivariate Normal is drawn around the first mean (mu1),
+#'and then reflected with respect to a hyperplane orthogonal to the direction between mu1 and mu2.
+#'
+#'For univariate Normal distribution, see \code{\link{rnorm_reflectionmax}}.
+#'
+#'@param mu1 First mean
+#'@param mu2 Second mean
+#'@param Cholesky Cholesky factor, e.g. obtained with \code{\link[base]{chol}}
+#'@param Cholesky_inverse Inverse of Cholesky factor, e.g. obtained with \code{solve(chol(Sigma))}
+#'@return A list containing 'xy', a matrix with 2 columns (one for each draw),
+#' and a boolean indicator 'identical' indicating whether the two draws
+#' are identical.
+#'@examples
+#' p <- 3
+#' mu1 <- rep(0, p)
+#' mu2 <- rep(1, p)
+#' Sigma <- rep(0.4^2, p)
+#' Sigma_chol <- sqrt(Sigma)
+#' rmvnorm_reflectionmax_diag(mu1, mu2, Sigma_chol)
+#'@export
+rmvnorm_reflectionmax_diag <- function(mu1, mu2, Cholesky){
+  return(rmvnorm_reflection_max_coupling_diag_(mu1, mu2, Cholesky))
 }
 
 

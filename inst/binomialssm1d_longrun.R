@@ -13,9 +13,9 @@ set.seed(2)
 source("inst/binomialssm1d_functions.R")
 ## 
 
-nmcmc <- 1e4
+nmcmc <- 4e4
 nparticles <- 256
-nchains <- detectCores()-2
+nchains <- 100
 # #### run long chains
 tictoc::tic("bssm 1d long run")
 history <- foreach(ichain = 1:nchains, .combine = rbind) %dorng% {
@@ -34,8 +34,8 @@ history <- foreach(ichain = 1:nchains, .combine = rbind) %dorng% {
 elapsed <- tictoc::toc(quiet = T)
 tictoc::tic.clear()
 print(elapsed$toc-elapsed$tic)
-save(nmcmc, nchains, history, file = "output/binomialssm1d.longrun.RData")
-load(file = "output/binomialssm1d.longrun.RData")
+save(nmcmc, nchains, history, file = "~/Dropbox/UnbiasedPoissonNumerics/binomialssm1d.longrun.RData")
+load(file = "~/Dropbox/UnbiasedPoissonNumerics/binomialssm1d.longrun.RData")
 nmcmc
 nchains
 # 

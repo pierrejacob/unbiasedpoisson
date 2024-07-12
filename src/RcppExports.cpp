@@ -41,6 +41,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// lag2
+NumericVector lag2(NumericVector s, int n, double b, String method);
+RcppExport SEXP _unbiasedpoisson_lag2(SEXP sSEXP, SEXP nSEXP, SEXP bSEXP, SEXP methodSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type s(sSEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type b(bSEXP);
+    Rcpp::traits::input_parameter< String >::type method(methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(lag2(s, n, b, method));
+    return rcpp_result_gen;
+END_RCPP
+}
 // fcprd
 Eigen::MatrixXd fcprd(const Eigen::MatrixXd X);
 RcppExport SEXP _unbiasedpoisson_fcprd(SEXP XSEXP) {
@@ -172,6 +186,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rmvnorm_reflection_max_coupling_diag_
+Rcpp::List rmvnorm_reflection_max_coupling_diag_(const Eigen::ArrayXd& mu1, const Eigen::ArrayXd& mu2, const Eigen::ArrayXd& Sigma_chol);
+RcppExport SEXP _unbiasedpoisson_rmvnorm_reflection_max_coupling_diag_(SEXP mu1SEXP, SEXP mu2SEXP, SEXP Sigma_cholSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::ArrayXd& >::type mu1(mu1SEXP);
+    Rcpp::traits::input_parameter< const Eigen::ArrayXd& >::type mu2(mu2SEXP);
+    Rcpp::traits::input_parameter< const Eigen::ArrayXd& >::type Sigma_chol(Sigma_cholSEXP);
+    rcpp_result_gen = Rcpp::wrap(rmvnorm_reflection_max_coupling_diag_(mu1, mu2, Sigma_chol));
+    return rcpp_result_gen;
+END_RCPP
+}
 // prune_measure_
 NumericMatrix prune_measure_(const NumericMatrix& df);
 RcppExport SEXP _unbiasedpoisson_prune_measure_(SEXP dfSEXP) {
@@ -202,6 +229,7 @@ RcppExport SEXP _rcpp_module_boot_module_tree();
 static const R_CallMethodDef CallEntries[] = {
     {"_unbiasedpoisson_c_chains_to_measure_as_list_", (DL_FUNC) &_unbiasedpoisson_c_chains_to_measure_as_list_, 3},
     {"_unbiasedpoisson_estimator_bin_", (DL_FUNC) &_unbiasedpoisson_estimator_bin_, 7},
+    {"_unbiasedpoisson_lag2", (DL_FUNC) &_unbiasedpoisson_lag2, 4},
     {"_unbiasedpoisson_fcprd", (DL_FUNC) &_unbiasedpoisson_fcprd, 1},
     {"_unbiasedpoisson_cpp_prod", (DL_FUNC) &_unbiasedpoisson_cpp_prod, 2},
     {"_unbiasedpoisson_multinomial_resampling_n_", (DL_FUNC) &_unbiasedpoisson_multinomial_resampling_n_, 2},
@@ -212,6 +240,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_unbiasedpoisson_rmvnorm_max_coupling_", (DL_FUNC) &_unbiasedpoisson_rmvnorm_max_coupling_, 4},
     {"_unbiasedpoisson_rmvnorm_max_coupling_cholesky", (DL_FUNC) &_unbiasedpoisson_rmvnorm_max_coupling_cholesky, 6},
     {"_unbiasedpoisson_rmvnorm_reflection_max_coupling_", (DL_FUNC) &_unbiasedpoisson_rmvnorm_reflection_max_coupling_, 4},
+    {"_unbiasedpoisson_rmvnorm_reflection_max_coupling_diag_", (DL_FUNC) &_unbiasedpoisson_rmvnorm_reflection_max_coupling_diag_, 3},
     {"_unbiasedpoisson_prune_measure_", (DL_FUNC) &_unbiasedpoisson_prune_measure_, 1},
     {"_unbiasedpoisson_systematic_resampling_n_", (DL_FUNC) &_unbiasedpoisson_systematic_resampling_n_, 3},
     {"_rcpp_module_boot_module_tree", (DL_FUNC) &_rcpp_module_boot_module_tree, 0},

@@ -144,11 +144,10 @@ results_umcmc <- results_ %>% filter(natoms == 1) %>% mutate(cost_umcmc = cost -
 cat("inefficiency of UMCMC:", round(var(results_umcmc$pih) * mean(results_umcmc$cost_umcmc), 3), "\n")
 avar_bestguess <- results_ %>% filter(natoms == 20) %>% summarise(avar = mean(estimator)) %>% pull()
 cat("inefficiency of std MCMC:", round(avar_bestguess, 3), "\n")
-
+cat("ratio:" , round(var(results_umcmc$pih) * mean(results_umcmc$cost_umcmc) / avar_bestguess, 3), "\n")
 ```
 
-
-Here we conclude that $v(P,h)$ for the HMC sampler is around 2.
+We see that the inefficiency of unbiased HMC is around 1.4 times the inefficiency of std HMC (40%) increase.
 
 ```{r groundtruth_hmc}
 ground_truth <- results.hmc %>% filter(natoms == 20) %>% summarise(avar = mean(estimator)) %>% pull()
@@ -189,10 +188,38 @@ a variance of 2 for a cost of 104,000.
 
 ### Standard estimators of avar
 
+#### Naive parallelization
+
+We can run $M$ parallel chains, each of length $T$ (post-burnin), 
+compute an ergodic average for each chain, and report the empirical variance.
+This is easy to parallelize over the $M$ runs. 
+
+```{r hmc_naiveparallel, message=FALSE, warning=FALSE}
+load(file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.hmc.longrun.RData")
+timehorizon <- 50000
+runs <- history.df %>% filter(iteration > 1000, iteration < timehorizon+1000) %>% group_by(chain) %>% summarise(estim = mean(value)) %>% pull(estim)
+var(runs) * timehorizon
+
+bootresult <- boot::boot(data = runs, statistic = function(v, indices) timehorizon*var(v[indices]), R = 1000)
+quantile(bootresult$t, probs = c(0.025, 0.975))
+```
+
+```{r hmc_naiveparallel_var, message=FALSE, warning=FALSE}
+## bootstrap replications of empirical variance over 'nrep' runs
+## the product 'timehorizon times variance' should approximate v(P,h) as timehorizon -> infty
+bootresult <- boot::boot(data = runs, statistic = function(v, indices) timehorizon*var(v[indices]), R = 1000)
+## variance of the bootstrap replications, each based on 'nrep' runs
+bootvar_samplevar <- var(bootresult$t)[1,1]
+bootvar_samplevar * nchains
+```
+
+Variance similar to SUAVE.
+
+
 ```{r hmc_classicalvar}
 load(file = "../output/randomeffects.hmc.classicalavar.RData")
   
-hmcclassicalvardf %>% group_by(nmcmc, method, r) %>% summarise(mean = mean(value), 
+hmcclassicalvardf %>% group_by(nmcmc, tss) %>% summarise(mean = mean(value), 
                                                         sd = sd(value),
                                                         v = var(value))
 
@@ -202,7 +229,7 @@ results.hmc <- results_ %>% filter(natoms == 20) %>% pull(estimator)
 estim_lo <- mean(results.hmc) - 1.96 * sd(results.hmc) / sqrt(length(results.hmc))
 estim_hi <- mean(results.hmc) + 1.96 * sd(results.hmc) / sqrt(length(results.hmc))
 
-g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 10000) %>% mutate(tss = paste(method, r)),
+g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 10000, tss != "spectrum0"),
        aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",
@@ -212,12 +239,12 @@ g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 10000) %>% mutate(tss = paste(
     shape = 24,
     fill = "yellow"
   )
-g <- g + xlab("method") + ylab("estimate") + ylim(1,2)
+g <- g + xlab("method") + ylab("estimate") + ylim(1,2.8)
 g <- g + geom_hline(yintercept =  mean(results.hmc), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
 g
-ggsave(filename = "../output/randomeffects.hmc.classicavar1e4.pdf", plot = g, width = 8, height = 5)
+ggsave(filename = "../output/randomeffects.hmc.classicavar1e4.pdf", plot = g, width = 10, height = 5)
 
-g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 100000) %>% mutate(tss = paste(method, r)),
+g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 100000, tss != "spectrum0"),
             aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",
@@ -227,10 +254,10 @@ g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 100000) %>% mutate(tss = paste
     shape = 24,
     fill = "yellow"
   )
-g <- g + xlab("method") + ylab("estimate")  + ylim(1,2)
+g <- g + xlab("method") + ylab("estimate")  + ylim(1.25,2.25)
 g <- g + geom_hline(yintercept =  mean(results.hmc), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
 g
-ggsave(filename = "../output/randomeffects.hmc.classicavar1e5.pdf", plot = g, width = 8, height = 5)
+ggsave(filename = "../output/randomeffects.hmc.classicavar1e5.pdf", plot = g, width = 10, height = 5)
 
 ```
 

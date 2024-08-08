@@ -190,7 +190,7 @@ cannot be much improved, in terms of inefficiency.
 ```{r highdimreg_classicalvar}
 load(file = "../output/highdimreg.classicalavar.RData")
 
-gibbsclassicalvardf %>% group_by(nmcmc, method, r) %>% summarise(mean = mean(value), 
+gibbsclassicalvardf %>% group_by(nmcmc, tss) %>% summarise(mean = mean(value),
                                                                 sd = sd(value),
                                                                 v = var(value))
 
@@ -211,7 +211,7 @@ results_uavar <- results.df %>% filter(natoms == 10) %>% pull(estimator)
 estim_lo <- mean(results_uavar) - 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
 estim_hi <- mean(results_uavar) + 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
 
-g <- ggplot(gibbsclassicalvardf %>% filter(nmcmc == 20000) %>% mutate(tss = paste(method, r)),
+g <- ggplot(gibbsclassicalvardf %>% filter(nmcmc == 20000, tss != "spectrum0"),
             aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",
@@ -221,12 +221,12 @@ g <- ggplot(gibbsclassicalvardf %>% filter(nmcmc == 20000) %>% mutate(tss = past
     shape = 24,
     fill = "yellow"
   )
-g <- g + xlab("method") + ylab("estimate") + ylim(25, 100)
+g <- g + xlab("method") + ylab("estimate") + ylim(25, 155)
 g <- g + geom_hline(yintercept =  mean(results_uavar), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
 g
-ggsave(filename = "../output/highdimreg.classicavar2e4.pdf", plot = g, width = 8, height = 5)
+ggsave(filename = "../output/highdimreg.classicavar2e4.pdf", plot = g, width = 10, height = 5)
 
-g <- ggplot(gibbsclassicalvardf %>% filter(nmcmc == 200000) %>% mutate(tss = paste(method, r)),
+g <- ggplot(gibbsclassicalvardf %>% filter(nmcmc == 200000, tss != "spectrum0"),
             aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",
@@ -236,8 +236,8 @@ g <- ggplot(gibbsclassicalvardf %>% filter(nmcmc == 200000) %>% mutate(tss = pas
     shape = 24,
     fill = "yellow"
   )
-g <- g + xlab("method") + ylab("estimate")  + ylim(25, 100)
+g <- g + xlab("method") + ylab("estimate") + ylim(40, 120)
 g <- g + geom_hline(yintercept =  mean(results_uavar), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
 g
-ggsave(filename = "../output/highdimreg.classicavar2e5.pdf", plot = g, width = 8, height = 5)
+ggsave(filename = "../output/highdimreg.classicavar2e5.pdf", plot = g, width = 10, height = 5)
 ```

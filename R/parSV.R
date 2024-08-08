@@ -26,6 +26,15 @@ mSVEfft <- function (A, b, method = "bartlett")
   
 }
 
+#'@rdname parSVE
+#'@title Parallel spectral variance estimator
+#'@description Parallel spectral variance estimator
+#' chain = list of chains, each of equal length
+#'\itemize{
+#' \item r = 1 is regular BM
+#' \item r = 2 is flat-top BM
+#' \item r = 3 is lugsail BM
+#' }
 #'@export
 parSVE <- function(chains, r = 1)
 {
@@ -48,8 +57,7 @@ parSVE <- function(chains, r = 1)
   for (m in 1:nchains)
   {
     chain.cen <- scale(chains[[m]], center = global.mean, scale =FALSE)
-    foo <- mSVEfft(A = chain.cen, b = b.final, method = "tukey") # change to  "bartlett"
-    
+    foo <- mSVEfft(A = chain.cen, b = b.final, method = "tukey") 
     rsve <- rsve + (2*foo - mSVEfft(A = chain.cen, b = floor(b.final/r), method = "tukey"))
   }
   

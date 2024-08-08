@@ -4,6 +4,7 @@ library(doParallel)
 library(doRNG)
 library(tidyverse)
 library(mcmcse) 
+library(coda)
 
 set.seed(1)
 setmytheme()
@@ -14,12 +15,23 @@ history.df <- history %>% rename(value = x1) %>% select(-targetpdf)
 history.df %>% tail
 ## discard first iterations
 burnin <- 1000
+
+spectrum0_df <- data.frame()
+for (nmcmc_ in c(1e4, 4e4)){
+  spectrum0_df_ <- foreach (i = 1:nchains, .combine = rbind) %dopar% {
+    xxx <- history.df %>% filter(iteration>burnin, iteration <= nmcmc_, chain == i) %>% pull(value)
+    data.frame(method = "spectrum0", value = spectrum0(xxx)$spec)
+  }
+  spectrum0_df_$nmcmc <- nmcmc_
+  spectrum0_df <- rbind(spectrum0_df, spectrum0_df_)
+}
+
+
 ## group chains by 4
 chainindices <- matrix(1:nchains, ncol = 4)
 nrep <- nrow(chainindices)
 pmmhclassicalvardf <- data.frame()
 for (nmcmc_ in c(1e4, 4e4)){
-  
   bmdf <- foreach (irep = 1:nrep, .combine = rbind) %dopar% {
     chainlist <- lapply(chainindices[irep,], function(i) history.df %>% filter(iteration>burnin, iteration <= nmcmc_, chain == i) %>% pull(value))
     sapply(1:3, function(r) parBM(chainlist, r = r)[1,1])
@@ -38,13 +50,18 @@ for (nmcmc_ in c(1e4, 4e4)){
   svdf$nmcmc <- nmcmc_
   pmmhclassicalvardf <- rbind(pmmhclassicalvardf, rbind(bmdf, svdf))
 }
-save(nmcmc, nchains, burnin, pmmhclassicalvardf, 
+
+pmmhclassicalvardf <- pmmhclassicalvardf %>% mutate(tss = paste(method, r)) %>% select(value, nmcmc, tss)
+pmmhclassicalvardf <- rbind(spectrum0_df %>% rename(tss = method) %>%  select(value, nmcmc, tss), pmmhclassicalvardf)
+pmmhclassicalvardf$tss <- factor(pmmhclassicalvardf$tss, levels = c("spectrum0", "BM r = 1", "BM r = 2", "BM r = 3", "SV r = 1", "SV r = 2", "SV r = 3"))
+
+save(nmcmc, nchains, burnin, pmmhclassicalvardf,
      file = "output/binomialssm.classicalavar.RData")
 load(file = "output/binomialssm.classicalavar.RData")
 
-pmmhclassicalvardf %>% group_by(nmcmc, method, r) %>% summarise(mean = mean(value), 
-                                                                sd = sd(value),
-                                                                v = var(value))
+# pmmhclassicalvardf %>% group_by(nmcmc, method, r) %>% summarise(mean = mean(value),
+#                                                                 sd = sd(value),
+#                                                                 v = var(value))
 
 load("output/binomialssm1d.uavar.P256.goodanchor.RData")
 
@@ -67,7 +84,8 @@ results_uavar <- results.df %>% filter(natoms == 50) %>% pull(estimator)
 estim_lo <- mean(results_uavar) - 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
 estim_hi <- mean(results_uavar) + 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
 
-g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 10000) %>% mutate(tss = paste(method, r)),
+
+g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 10000),
             aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",
@@ -81,7 +99,7 @@ g <- g + xlab("method") + ylab("estimate") + ylim(0.001, 0.004)
 g <- g + geom_hline(yintercept =  mean(results_uavar), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
 g
 
-g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 40000) %>% mutate(tss = paste(method, r)),
+g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 40000),
             aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",

@@ -1,6 +1,6 @@
 #'@name unbiasedpoisson-package
 #'@aliases unbiasedpoisson
-#'@docType package
+#'_PACKAGE
 #'@title unbiasedpoisson
 #'@author anonymous ... 
 #'@description Unbiased Poisson

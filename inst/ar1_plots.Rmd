@@ -161,7 +161,7 @@ bias <- timehorizon*f(timehorizon) - avar
 print(bias)
 ```
 
-That bias is not negligible but not very large either ($<1\%$ of $v(P,h)$).
+That bias is not very large ($<1\%$ of $v(P,h)$).
 
 We next look at the variance associated with this naive strategy.
 We generate $M=1000$ copies and compute the variance of the empirical variance.
@@ -184,9 +184,14 @@ runs <- foreach(irep = 1:nrep, .combine = c) %dorng% {
   }
   mean(chainhistory)
 }
+## bootstrap replications of empirical variance over 'nrep' runs
+## the product 'timehorizon times variance' should approximate v(P,h) as timehorizon -> infty
 bootresult <- boot::boot(data = runs, statistic = function(v, indices) timehorizon*var(v[indices]), R = 1000)
+## variance of the bootstrap replications, each based on 'nrep' runs
 bootvar_samplevar <- var(bootresult$t)[1,1]
+## variance of each run = nrep times the variance of the empirical variance over the runs
 prettyNum(bootvar_samplevar*nrep, scientific=T, digits=3)
+## analytical calculation, feasible in the AR(1) case
 var_samplevar <- (mean((runs - mean(runs))^4) - var(runs)^2 *(nrep-3)/(nrep-1))/nrep
 prettyNum(var_samplevar*timehorizon^2*nrep, scientific=T, digits=3)
 ```

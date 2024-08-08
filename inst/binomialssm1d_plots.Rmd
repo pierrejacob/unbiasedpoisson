@@ -375,21 +375,19 @@ estimator in terms of efficiency.
 ### BM and SV
 ```{r binomialssm_bmsv}
 load(file = "../output/binomialssm.classicalavar.RData")
-pmmhclassicalvardf %>% group_by(nmcmc, method, r) %>% summarise(mean = mean(value), sd = sd(value), v = var(value))
+pmmhclassicalvardf %>% group_by(nmcmc, tss) %>% summarise(mean = mean(value), sd = sd(value), v = var(value))
 ```
 
 
 Quick calculation:
 ```{r}
-# var of SV r = 2, t = 20k: 1.365159e-08
-# cost: 4 * 20k = 80000
+# var of SV r = 2, t = 40k: 3.326844e-08
+# cost: 4 * 40k = 160,000
 
+# SUAVE with R = 50: cost 6k, variance 6e-7
 
-
-# SUAVE with R = 50: cost 6k, variance 5e-7
-
-# number of SUAVE to get a variance of 1.365159e-08:
-6e-7/1.365159e-08
+# number of SUAVE to get a variance of 3.326844e-08:
+6e-7/3.326844e-08
 ```
 
 ```{r binomialssm_bmsv_plots}
@@ -414,7 +412,7 @@ results_uavar <- results.df %>% filter(natoms == 50) %>% pull(estimator)
 estim_lo <- mean(results_uavar) - 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
 estim_hi <- mean(results_uavar) + 1.96 * sd(results_uavar) / sqrt(length(results_uavar))
 
-g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 10000) %>% mutate(tss = paste(method, r)),
+g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 10000, tss != "spectrum0"),
             aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",
@@ -424,12 +422,12 @@ g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 10000) %>% mutate(tss = paste
     shape = 24,
     fill = "yellow"
   )
-g <- g + xlab("method") + ylab("estimate") + ylim(0.002, 0.004)
+g <- g + xlab("method") + ylab("estimate") + ylim(0.0015, 0.005)
 g <- g + geom_hline(yintercept =  mean(results_uavar), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
 g
-ggsave(filename = "../output/binomialssm.classicavar1e4.pdf", plot = g, width = 8, height = 5)
+ggsave(filename = "../output/binomialssm.classicavar1e4.pdf", plot = g, width = 10, height = 5)
 
-g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 20000) %>% mutate(tss = paste(method, r)),
+g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 40000, tss != "spectrum0"),
             aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",
@@ -439,9 +437,9 @@ g <- ggplot(pmmhclassicalvardf %>% filter(nmcmc == 20000) %>% mutate(tss = paste
     shape = 24,
     fill = "yellow"
   )
-g <- g + xlab("method") + ylab("estimate")  + ylim(0.002, 0.004)
+g <- g + xlab("method") + ylab("estimate") + ylim(0.002, 0.0045)
 g <- g + geom_hline(yintercept =  mean(results_uavar), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
 g
-ggsave(filename = "../output/binomialssm.classicavar2e4.pdf", plot = g, width = 8, height = 5)
+ggsave(filename = "../output/binomialssm.classicavar4e4.pdf", plot = g, width = 10, height = 5)
 ```
 

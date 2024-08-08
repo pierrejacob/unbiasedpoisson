@@ -16,6 +16,19 @@ tail(history.df)
 
 ## discard first iterations
 burnin <- 1000
+
+
+
+spectrum0_df <- data.frame()
+for (nmcmc_ in c(1e4, 1e5)){
+  spectrum0_df_ <- foreach (i = 1:nchains, .combine = rbind) %dopar% {
+    xxx <- history.df %>% filter(iteration>burnin, iteration <= nmcmc_, chain == i) %>% pull(value)
+    data.frame(method = "spectrum0", value = spectrum0(xxx)$spec)
+  }
+  spectrum0_df_$nmcmc <- nmcmc_
+  spectrum0_df <- rbind(spectrum0_df, spectrum0_df_)
+}
+
 ## group chains by 4
 chainindices <- matrix(1:nchains, ncol = 4)
 nrep <- nrow(chainindices)
@@ -40,11 +53,17 @@ for (nmcmc_ in c(1e4, 1e5)){
   svdf$nmcmc <- nmcmc_
   hmcclassicalvardf <- rbind(hmcclassicalvardf, rbind(bmdf, svdf))
 }
+
+hmcclassicalvardf <- hmcclassicalvardf %>% mutate(tss = paste(method, r)) %>% select(value, nmcmc, tss)
+hmcclassicalvardf <- rbind(spectrum0_df %>% rename(tss = method) %>%  select(value, nmcmc, tss), hmcclassicalvardf)
+hmcclassicalvardf$tss <- factor(hmcclassicalvardf$tss, levels = c("spectrum0", "BM r = 1", "BM r = 2", "BM r = 3", "SV r = 1", "SV r = 2", "SV r = 3"))
+
+
 save(nmcmc, nchains, burnin, hmcclassicalvardf,
      file = "output/randomeffects.hmc.classicalavar.RData")
 load(file = "output/randomeffects.hmc.classicalavar.RData")
-  
-hmcclassicalvardf %>% group_by(nmcmc, method, r) %>% summarise(mean = mean(value), 
+
+hmcclassicalvardf %>% group_by(nmcmc, tss) %>% summarise(mean = mean(value), 
                                                         sd = sd(value),
                                                         v = var(value))
 
@@ -54,7 +73,7 @@ results.hmc <- results_ %>% filter(natoms == 20) %>% pull(estimator)
 estim_lo <- mean(results.hmc) - 1.96 * sd(results.hmc) / sqrt(length(results.hmc))
 estim_hi <- mean(results.hmc) + 1.96 * sd(results.hmc) / sqrt(length(results.hmc))
 
-g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 10000) %>% mutate(tss = paste(method, r)),
+g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 10000),
        aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",
@@ -64,11 +83,11 @@ g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 10000) %>% mutate(tss = paste(
     shape = 24,
     fill = "yellow"
   )
-g <- g + xlab("method") + ylab("estimate") + ylim(1,2)
+g <- g + xlab("method") + ylab("estimate") + ylim(1,2.8)
 g <- g + geom_hline(yintercept =  mean(results.hmc), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
 g
 
-g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 100000) %>% mutate(tss = paste(method, r)),
+g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 100000),
             aes(x = tss, y = value)) + geom_point() +
   stat_summary(
     geom = "point",
@@ -78,7 +97,7 @@ g <- ggplot(hmcclassicalvardf %>% filter(nmcmc == 100000) %>% mutate(tss = paste
     shape = 24,
     fill = "yellow"
   )
-g <- g + xlab("method") + ylab("estimate")  + ylim(1,2)
+g <- g + xlab("method") + ylab("estimate")  + ylim(1,2.8)
 g <- g + geom_hline(yintercept =  mean(results.hmc), col = "red") +  geom_hline(yintercept = c(estim_lo, estim_hi), linetype = "dashed", color = "red")
 g
 # table_hmc <- results.hmc %>% ungroup() %>% group_by(natoms) %>%

@@ -7,8 +7,8 @@ output: rmarkdown::github_document
 
 This package contains scripts that generate
 the figures and tables of the article 
-"Solving the Poisson equation using coupled Markov chains"
-by Randal Douc, Pierre E. Jacob, Anthony Lee and Dootika Vats.
+["Solving the Poisson equation using coupled Markov chains"](https://arxiv.org/abs/2206.05691)
+by [Randal Douc](https://wiki.randaldouc.xyz/doku.php?id=world:homepage), [Pierre E. Jacob](https://sites.google.com/site/pierrejacob/), [Anthony Lee](https://awllee.github.io/) and [Dootika Vats](https://dvats.github.io/).
 
 ### Installation
 

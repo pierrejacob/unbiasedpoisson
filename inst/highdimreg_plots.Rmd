@@ -37,7 +37,9 @@ source("highdimreg_functions.R")
 We start by loading MCMC runs, and plotting some traces.
 
 ```{r longruntrace, warning=FALSE}
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/highdimreg.longrun.RData")
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
+load(file = file.path(filepath,"highdimreg.longrun.RData"))
 gtrace <- ggplot(history.df %>% filter(iteration >= 10, iteration <= 1000, chain <= 3),
        aes(x = iteration, y = value, group = chain, colour = factor(chain))) + geom_line() + xlab("iteration") + ylab(TeX("$\\beta_{2564}$")) +
   scale_color_manual(values = c("black", "#005BBB", "#FFD500", "red")) + theme(legend.position = "none")

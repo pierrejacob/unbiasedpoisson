@@ -34,8 +34,10 @@ history <- foreach(ichain = 1:nchains, .combine = rbind) %dorng% {
 elapsed <- tictoc::toc(quiet = T)
 tictoc::tic.clear()
 print(elapsed$toc-elapsed$tic)
-save(nmcmc, nchains, history, file = "~/Dropbox/UnbiasedPoissonNumerics/binomialssm1d.longrun.RData")
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/binomialssm1d.longrun.RData")
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
+save(nmcmc, nchains, history, file = file.path(filepath, "binomialssm1d.longrun.RData"))
+load(file = file.path(filepath, "binomialssm1d.longrun.RData"))
 nmcmc
 nchains
 # 

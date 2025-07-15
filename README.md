@@ -39,3 +39,6 @@ if (!require("mcmcse")) install.packages("mcmcse")
 if (!require("fftwtools")) install.packages("fftwtools")
 if (!require("RcppArmadillo")) install.packages("RcppArmadillo")
 ```
+
+Some scripts require the existence of an \`output’ folder in the root
+folder. Create one as needed.

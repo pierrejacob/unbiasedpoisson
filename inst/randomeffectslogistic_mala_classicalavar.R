@@ -10,8 +10,10 @@ setmytheme()
 registerDoParallel(cores = detectCores() - 2)
 # source("inst/randomeffectslogistic_model.R")
 # source("inst/mala_functions.R")
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
 
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.mala.longrun.RData")
+load(file = file.path(filepath, "randomeffects.mala.longrun.RData"))
 tail(history.df)
 
 ## discard first iterations

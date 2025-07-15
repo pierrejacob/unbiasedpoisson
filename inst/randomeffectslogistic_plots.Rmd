@@ -63,7 +63,10 @@ The upper bounds might suggest that one sampler converges faster than the other;
 however these are only upper bounds, so the actual TV distances might be ordered differently.
 
 ```{r tracehmc}
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.hmc.longrun.RData")
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
+
+load(file = file.path(filepath, "randomeffects.hmc.longrun.RData"))
 gtrace <- ggplot(history.df %>% filter(iteration >= 0, iteration <= 1000, chain <= 3),
        aes(x = iteration, y = value, group = chain, colour = factor(chain))) + geom_line() + xlab("iteration") + ylab(TeX("$\\beta_{c}$")) +
   scale_color_manual(values = c("black", "#005BBB", "#FFD500", "red")) + theme(legend.position = "none")
@@ -195,7 +198,7 @@ compute an ergodic average for each chain, and report the empirical variance.
 This is easy to parallelize over the $M$ runs. 
 
 ```{r hmc_naiveparallel, message=FALSE, warning=FALSE}
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.hmc.longrun.RData")
+load(file = file.path(filepath, "randomeffects.hmc.longrun.RData"))
 timehorizon <- 50000
 runs <- history.df %>% filter(iteration > 1000, iteration < timehorizon+1000) %>% group_by(chain) %>% summarise(estim = mean(value)) %>% pull(estim)
 var(runs) * timehorizon

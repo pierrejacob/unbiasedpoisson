@@ -68,7 +68,9 @@ We first run a few independent chains, using $P=256$ particles
 in each run of the particle filter. The trace plot looks as follows.
 
 ```{r traceplot, warning=FALSE, message=FALSE}
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/binomialssm1d.longrun.RData")
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
+load(file = file.path(filepath, "binomialssm1d.longrun.RData"))
 ggplot(history %>% filter(iteration < 3e2), aes(x = iteration, y = x1, group = chain)) + geom_line() + ylab(TeX("$\\alpha$"))
 ```
 

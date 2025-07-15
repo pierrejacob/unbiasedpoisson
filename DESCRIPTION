@@ -2,11 +2,11 @@ Package: unbiasedpoisson
 Type: Package
 Title: Estimation of solutions of the Poisson equation
 Version: 1.0
-Date: 2024-07-14
+Date: 2025-07-15
 Author: - 
 Maintainer: Pierre E. Jacob <pierre.jacob.work@gmail.com>
 Description: Generate coupled Markov chains to estimate unbiasedly the pointwise evaluations of solutions of the Poisson equation.
-License: What license is it under?
+License: MIT
 Depends: Rcpp, RcppEigen, tictoc
 Imports: Rcpp (>= 1.0.7), RcppEigen
 Encoding: UTF-8

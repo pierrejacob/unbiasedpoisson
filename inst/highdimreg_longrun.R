@@ -10,6 +10,8 @@ registerDoParallel(cores = 10)
 set.seed(1)
 
 source("inst/highdimreg_functions.R")
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
 
 nmcmc <- 2e5
 nchains <- 100
@@ -28,8 +30,9 @@ history.df <- reshape2::melt(history)
 names(history.df) <- c("iteration", "chain", "value")
 history.df$chain <- rep(1:nchains, each = nmcmc)
 
-save(nmcmc, nchains, history.df, file = "~/Dropbox/UnbiasedPoissonNumerics/highdimreg.longrun.RData")
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/highdimreg.longrun.RData")
+
+save(nmcmc, nchains, history.df, file = file.path(filepath,"highdimreg.longrun.RData"))
+load(file = file.path(filepath,"highdimreg.longrun.RData"))
 
 library(mcmcse) 
 ##### Parallel batch means

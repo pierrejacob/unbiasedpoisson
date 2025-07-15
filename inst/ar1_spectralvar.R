@@ -82,7 +82,8 @@ nchains <- c(1, 2, 4, 8)
 ## we also need to discard burn-in, ~500 here
 burnin <- 500
 #### uncomment the following to compute parBM on the long runs
-load("~/Dropbox/UnbiasedPoissonNumerics/ar1.longruns.RData")
+# load("~/Dropbox/UnbiasedPoissonNumerics/ar1.longruns.RData")
+load("ar1.longruns.RData")
 ###
 cat("# independent chains:", nrep, "\n")
 cat("time horizon:", timehorizon, "\n")

@@ -10,7 +10,9 @@ set.seed(1)
 setmytheme()
 registerDoParallel(cores = detectCores() - 2)
 
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/binomialssm1d.longrun.RData")
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
+load(file = file.path(filepath, "binomialssm1d.longrun.RData"))
 history.df <- history %>% rename(value = x1) %>% select(-targetpdf)
 history.df %>% tail
 ## discard first iterations

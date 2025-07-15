@@ -50,7 +50,8 @@ nchains <- c(1, 2, 4, 8)
 ## for each 'nchain' we have 'nrep/nchain' independent copies of the parallel BM estimator
 ## we also need to discard burn-in, ~500 here
 burnin <- 500
-load("~/Dropbox/UnbiasedPoissonNumerics/ar1.longruns.RData")
+# load("~/Dropbox/UnbiasedPoissonNumerics/ar1.longruns.RData")
+load("ar1.longruns.RData")
 # ##
 cat("# independent chains:", nrep, "\n")
 cat("time horizon:", timehorizon, "\n")

@@ -10,7 +10,10 @@ set.seed(1)
 setmytheme()
 registerDoParallel(cores = detectCores() - 2)
 
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/highdimreg.longrun.RData")
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
+
+load(file = file.path(filepath,"highdimreg.longrun.RData"))
 history.df %>% head
 ## discard first iterations
 burnin <- 1500

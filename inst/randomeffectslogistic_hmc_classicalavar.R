@@ -10,8 +10,11 @@ setmytheme()
 registerDoParallel(cores = detectCores() - 2)
 # source("inst/randomeffectslogistic_model.R")
 # source("inst/hmc_functions.R")
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
 
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.hmc.longrun.RData")
+load(file = file.path(filepath, "randomeffects.hmc.longrun.RData"))
+
 tail(history.df)
 
 ## discard first iterations

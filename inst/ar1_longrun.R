@@ -10,7 +10,7 @@ registerDoParallel(cores = detectCores()-2)
 set.seed(1)
 
 ## path where the (large) files will be saved
-savepath <- "~/Dropbox/UnbiasedPoissonNumerics/"
+# savepath <- "~/Dropbox/UnbiasedPoissonNumerics/"
 
 ## import functions for the AR(1) model
 source("inst/ar1functions.R")

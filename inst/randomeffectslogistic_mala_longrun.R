@@ -8,6 +8,8 @@ registerDoParallel(cores = detectCores() - 2)
 source("inst/randomeffectslogistic_model.R")
 source("inst/mala_functions.R")
 
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
 
 nmcmc <- 1000000
 nchains <- 100
@@ -27,8 +29,8 @@ history.df <- reshape2::melt(history)
 names(history.df) <- c("iteration", "chain", "value")
 history.df$chain <- rep(1:nchains, each = nmcmc)
 
-save(nmcmc, nchains, stepsize, Lmax, history.df, file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.mala.longrun.RData")
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.mala.longrun.RData")
+save(nmcmc, nchains, stepsize, Lmax, history.df, file = file.path(filepath, "randomeffects.mala.longrun.RData"))
+load(file = file.path(filepath, "randomeffects.mala.longrun.RData"))
 
 tail(history.df)
 

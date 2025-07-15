@@ -11,6 +11,8 @@ source("inst/hmc_functions.R")
 
 nmcmc <- 100000
 nchains <- 100
+# filepath <- "~/Dropbox/UnbiasedPoissonNumerics"
+filepath <- ""
 
 
 history <- foreach(ichain = 1:nchains, .combine = cbind) %dorng% {
@@ -27,8 +29,8 @@ history.df <- reshape2::melt(history)
 names(history.df) <- c("iteration", "chain", "value")
 history.df$chain <- rep(1:nchains, each = nmcmc)
 
-save(nmcmc, nchains, stepsize, Lmax, history.df, file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.hmc.longrun.RData")
-load(file = "~/Dropbox/UnbiasedPoissonNumerics/randomeffects.hmc.longrun.RData")
+save(nmcmc, nchains, stepsize, Lmax, history.df, file = file.path(filepath, "randomeffects.hmc.longrun.RData"))
+load(file = file.path(filepath, "randomeffects.hmc.longrun.RData"))
 
 tail(history.df)
 
